@@ -1,0 +1,112 @@
+<%
+// *********************************************************
+if(typeof req.body.rest != "undefined"){
+  //console.log(req.body.rest);
+  switch(req.body.rest){
+    case "GET_CODE": // Get data ...........................
+      break;
+    default:
+      return res.json(req.body.rest+"?");
+  }
+  return;
+}
+// *********************************************************
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>  
+<title>COUNTER</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="css/w3.css">
+<!--
+<link rel="stylesheet" type="text/css" href="css/theme/w3-theme-blue.css" id="id_Theme">
+<link rel="stylesheet" type="text/css" href="css/awesome/css/fontawesome.min.css">
+<link rel="stylesheet" type="text/css" href="css/awesome/css/brands.min.css">
+<link rel="stylesheet" type="text/css" href="css/awesome/css/solid.min.css">
+-->
+
+<script src="lib/jquery/jquery.min.js"></script>
+<script src="lib/sprintf.min.js"></script>
+<script language="JavaScript" type="text/javascript">
+// ---------------------------------------------------------
+jQuery(function($){
+  console.log("start");
+});
+// ---------------------------------------------------------
+// functions
+// ---------------------------------------------------------
+function choice(ev, el, arg){
+  var c = $(el).data("c");
+
+//console.log(__FUNCTION__, c, arg);
+  switch(c){
+    case "GET_CODE": // ....................................
+      break;
+    default: // ............................................
+      console.log(__FILE__, __FUNCTION__, c);
+  }
+}
+// ---------------------------------------------------------
+</script> 
+
+<style type="text/css">
+html,body {
+  height:100%;
+  width:100%;
+}
+.w3-button {
+  width:2em;
+  height:2em;
+}
+table tr {
+  height:1%;
+}
+table td:not(:first-child):not(:last-child) {
+  width:1%;
+}
+</style>
+
+</head>
+<body class="magnify" data-key_ever="" data-font="1" style="height:100%">
+<table class="w3-xxlarge w3-table" border="1" style="width:100%;height:100%">
+  <tbody>
+    <tr style="height:50%">
+      <td colspan="5"></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><button class="w3-button">1</button></td>
+      <td><button class="w3-button">2</button></td>
+      <td><button class="w3-button">3</button></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><button class="w3-button">4</button></td>
+      <td><button class="w3-button">5</button></td>
+      <td><button class="w3-button">6</button></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><button class="w3-button">7</button></td>
+      <td><button class="w3-button">8</button></td>
+      <td><button class="w3-button">9</button></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><button class="w3-button">X</button></td>
+      <td><button class="w3-button">0</button></td>
+      <td><button class="w3-button">=</button></td>
+      <td></td>
+    </tr>
+    <tr style="height:50%">
+      <td colspan="5"></td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,48 @@
+{
+  "name": "door",
+  "version": "1.0.0",
+  "description": "buzzer",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app",
+    "devstart": "nodemon app"
+  },
+  "nodemonConfig": {
+    "ext": "js,htm,json,ejs",
+    "ignore": [
+      "net/",
+      "sessions/",
+      "app"
+    ],
+    "watch": [
+      "./",
+      "public/",
+      "views/"
+    ],
+    "delay": "10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MichiKrocka/door.git"
+  },
+  "keywords": [
+    "buzzer"
+  ],
+  "author": "Michael Krocka",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MichiKrocka/door/issues"
+  },
+  "homepage": "https://github.com/MichiKrocka/door#readme",
+  "dependencies": {
+    "compression": "^1.7.4",
+    "ejs": "^3.1.6",
+    "express": "^4.17.1",
+    "extend": "^3.0.2",
+    "fs-extra": "^9.1.0",
+    "path": "^0.12.7",
+    "serve-favicon": "^2.5.0",
+    "sprintf-js": "^1.1.2"
+  }
+}

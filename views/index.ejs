@@ -1,14 +1,91 @@
 <%
 // *********************************************************
+var d = new Date();
+
+d = sprintf("%04i-%02i-%02i %02i:%02i:%02i",
+    d.getFullYear(), d.getMonth() + 1, d.getDate(),
+    d.getHours(), d.getMinutes(), d.getSeconds());
+
 if(typeof req.body.rest != "undefined"){
-  //console.log(req.body.rest);
+  if(cfg.debug)
+    console.log(req.body);
   switch(req.body.rest){
     case "GET_CODE": // Get data ...........................
+      if(cfg.codes[req.body.code]){
+        fs.appendFile(cfg.log, sprintf("%s %-10s %s\n",
+          d, req.body.code, cfg.codes[req.body.code]));
+        makeInpuls();
+      } else {
+        fs.appendFile(cfg.log, sprintf("%s %-10s %s\n",
+          d, req.body.code, "???"));
+        res.json("KO");
+      }
+      break;
+    case "SET_CODE": // ....................................
+      if(req.body.code == cfg.admin){
+        cfg.codes = req.body.codes;
+        fs.writeJson("config.json", cfg, {
+          spaces: 2
+        }, function(err){
+          res.json(err ? err : req.body.codes);
+        });
+      } else
+        res.json("KO");
+      break;
+    case "GET_ADMIN": // ...................................
+      if(req.body.code == cfg.admin)
+        res.json(cfg.codes);
+      else
+        res.json("KO");
+      break;
+    case "LOGS": // ........................................
+      if(req.body.code == cfg.admin)
+        res.download(cfg.log);
+      else
+        res.end("");
+      break;
+    case "RESET": // .......................................
+      if(req.body.code == cfg.admin)
+        fs.remove(cfg.log);
+      res.json("");
       break;
     default:
       return res.json(req.body.rest+"?");
   }
   return;
+}
+// ---------------------------------------------------------
+function makeInpuls(){
+  var client = new net.Socket(),
+      oErr   = "OK",
+      sw     = false;
+
+  client.connect(cfg.sw_port, cfg.sw_host, function(){
+    var buff = new Buffer(cfg.sw_on, 'base64');
+
+    client.write(buff);
+    setTimeout(function(){
+      var buff = new Buffer(cfg.sw_off, 'base64');
+
+      client.write(buff);
+      sw = true;
+    }, cfg.sw_delay);
+  })
+  .on('error', function(err){
+    fs.appendFile(cfg.log, `${d} ${err.toString()}\n`);
+    oErr = err;
+  })
+  .on('data', function(data){
+    if(cfg.debug)
+      console.log('Received: ' + data.toString('base64'));
+    if(sw)
+      client.destroy(); // kill client after server's response
+  })
+  .on('close', function() {
+    if(cfg.debug)
+      console.log('Connection closed');
+    res.json(oErr);
+  });
 }
 // *********************************************************
 %>
@@ -16,12 +93,12 @@ if(typeof req.body.rest != "undefined"){
 <!DOCTYPE html>
 <html lang="en">
 <head>  
-<title>COUNTER</title>
+<title>DOOR</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" type="text/css" href="css/w3.css">
-<!--
 <link rel="stylesheet" type="text/css" href="css/theme/w3-theme-blue.css" id="id_Theme">
+<!--
 <link rel="stylesheet" type="text/css" href="css/awesome/css/fontawesome.min.css">
 <link rel="stylesheet" type="text/css" href="css/awesome/css/brands.min.css">
 <link rel="stylesheet" type="text/css" href="css/awesome/css/solid.min.css">
@@ -31,22 +108,217 @@ if(typeof req.body.rest != "undefined"){
 <script src="lib/sprintf.min.js"></script>
 <script language="JavaScript" type="text/javascript">
 // ---------------------------------------------------------
+var keyNames = {
+  3: "Pause", 8: "Backspace", 9: "Tab", 13: "Enter", 16: "Shift",
+  17: "Ctrl", 18: "Alt", 19: "Pause", 20: "CapsLock", 27: "Esc",
+  32: "Space", 33: "PageUp", 34: "PageDown", 35: "End", 36: "Home",
+  37: "Left", 38: "Up", 39: "Right", 40: "Down", 44: "PrintScrn",
+  45: "Insert", 46: "Delete", 59: ";", 61: "=", 91: "Mod",
+  92: "Mod", 93: "Mod", 106: "*", 107: "=", 109: "-", 110: ".",
+  111: "/", 127: "Delete", 145: "ScrollLock", 171: "+", 173: "-", 186: ";",
+  187: "=", 188: ",", 189: "-", 190: ".", 191: "/", 192: "`",
+  219: "[", 220: "\\", 221: "]", 222: "'", 63232: "Up",
+  63233: "Down", 63234: "Left", 63235: "Right", 63272: "Delete",
+  63273: "Home", 63275: "End", 63276: "PageUp", 63277: "PageDown",
+  63302: "Insert"
+};
+// Number keys
+for(var i = 0; i < 10; i++)
+  keyNames[i + 48] = keyNames[i + 96] = String(i);
+// Alphabetic keys
+for(var i$1 = 65; i$1 <= 90; i$1++)
+  keyNames[i$1] = String.fromCharCode(i$1);
+var keyPatt = new RegExp("^[0-9]$");
+var swBlock = false;
+const TR = `\
+<tr>
+  <td></td>
+  <td><input type="text" value="%s" class="w3-input w3-border"
+    maxlength="10" pattern="[0-9]+" required></td>
+  <td><input type="text" value="%s" class="w3-input w3-border"
+    required></td>
+  <td class="w3-button w3-text-red" data-c="DEL">x</td>
+</tr>`;
+// ---------------------------------------------------------
+$.postJSON = function(url, data, callback, type) {
+  return jQuery.ajax({
+    'type':        'POST',
+    'url':         url,
+    'contentType': 'application/json; charset=utf-8',
+    'data':        JSON.stringify(data),
+    'dataType':    type ? type : 'json',
+    'success':     callback
+  });
+};
+// ---------------------------------------------------------
 jQuery(function($){
-  console.log("start");
+  $('button', '#id_Code').on("click", function(ev){
+    var key = $(this).text();
+
+    this.blur();
+    choice(key == "⏎" ? key = "Enter" : key);
+  });
+  // .......................................................
+  $(window).on("keyup", function(ev){
+    if(ev.keyCode == 34 && ev.char)
+      return;
+    var key = keyNames[ev.keyCode];
+
+    if(key == null || ev.altGraphKey)
+      return;
+    if(ev.keyCode == 3 && ev.code)
+      key = ev.code;
+    if(ev.altKey && key != "Alt")
+      key = "Alt-" + key;
+    if(ev.ctrlKey && key != "Ctrl")
+      key = "Ctrl-" + key;
+    if(ev.metaKey && key != "Cmd")
+      key = "Cmd-" + key;
+    if(ev.shiftKey && key != "Shift")
+      key = "Shift-" + key;
+
+    if(key == "Ctrl-Enter"){
+      var elCode = $('input[name=code]'),
+          c      = elCode.val();
+
+      if(!$('#id_Code').is(':visible'))
+        return $('#id_Code,#id_Admin').toggle();
+
+      if(c != "" && !swBlock){
+        swBlock = true;
+        setTimeout(function(){
+          swBlock = false;
+        }, 500);
+        $.postJSON("", {
+          rest: "GET_ADMIN",
+          code: c
+        }, function(D){
+          if(D == "KO")
+            return;
+          var tr = [];
+          
+          for(var d in D)
+            tr.push(sprintf(TR, d, D[d]));
+          $('tbody', '#id_Tab').html(tr.join(""));
+          $('#id_Code,#id_Admin').toggle();
+        });
+      }
+    } else
+      choice(key);
+  });
+  // .......................................................
+  $('#id_Admin').on("click", '.w3-button', function(ev){
+    var c      = $(this).data("c"),
+        elCode = $('input[name=code]'),
+        code   = elCode.val();
+
+    switch(c){
+      case "DEL":
+        $(this).closest('tr').remove();
+        break;
+      case "LOGS":
+        download("", {
+          rest: "LOGS",
+          code: code
+        });
+        break;
+      case "RESET":
+        $.postJSON("", {
+          rest: "RESET",
+          code: code
+        }, function(D){
+        });
+        break;
+      case "ADD":
+        $('tbody', '#id_Tab').append(sprintf(TR, "", ""));
+        $('input', '#id_Tab tbody tr:last-child').eq(0).focus();
+        break;
+      case "SAVE":
+        var elInv = $(':invalid');
+
+        if(elInv.length)
+          return elInv.eq(0).focus();
+        var codes = {};
+        
+        $('tr', '#id_Tab tbody').each(function(){
+          var inps = $('input', this);
+
+          codes[inps.eq(0).val().trim()] = inps.eq(1).val().trim();
+        });
+        $.postJSON("", {
+          rest:  "SET_CODE",
+          code:  code,
+          codes: codes
+        }, function(D){
+        });
+        break;
+    }
+    $(this).blur();
+  });
 });
 // ---------------------------------------------------------
 // functions
 // ---------------------------------------------------------
-function choice(ev, el, arg){
-  var c = $(el).data("c");
+function choice(key){
+  if(!$('#id_Code').is(':visible'))
+    return;
+  var elCode = $('input[name=code]'),
+      c      = elCode.val();
 
-//console.log(__FUNCTION__, c, arg);
-  switch(c){
-    case "GET_CODE": // ....................................
-      break;
-    default: // ............................................
-      console.log(__FILE__, __FUNCTION__, c);
+  elCode.focus();
+  if(keyPatt.test(key)){
+    if(c.length >= 10)
+      c = c.substr(1, 10);
+    elCode.val(c + key);
+    return;
   }
+  switch(key){
+    case "x":
+    case "X":
+    case "Esc":
+    case "Delete":
+      elCode.val("");
+      break;
+    case "Backspace":
+      elCode.val(c.substr(0, c.length - 1));
+      break;
+    case "Enter":
+      if(c != "" && !swBlock){
+        swBlock = true;
+        setTimeout(function(){
+          swBlock = false;
+        }, 1000);
+        $.postJSON("", {
+          rest: "GET_CODE",
+          code: c
+        }, function(D){
+        });
+        elCode.val("");
+      }
+      break;
+  }
+}
+// ---------------------------------------------------------
+function download(url, data) {
+  $('#id_dwnDiv').remove();
+  var inp  = [],
+      $div = $(
+        '<div id="id_dwnDiv" style="display:none">'+
+          '<iframe name="dwnIframe"></iframe>'+
+          '<form action="'+url+'" target="dwnIframe" method="post">'+
+          '</form>"'+
+        '</div>'
+      );
+  
+  for(var d in data){
+    var $inp = $('<input name="'+d+'">');
+
+    $inp.val(data[d]);
+    inp.push($inp);
+  }
+  $('form', $div).html(inp);
+  $div.appendTo('body');
+  $('form', '#id_dwnDiv').submit().remove();
 }
 // ---------------------------------------------------------
 </script> 
@@ -55,58 +327,89 @@ function choice(ev, el, arg){
 html,body {
   height:100%;
   width:100%;
+  font-family:monospace;
 }
-.w3-button {
-  width:2em;
+table.tab-counter tbody {
+  counter-reset: rowNumber;
+}
+table.tab-counter tbody tr {
+  counter-increment: rowNumber;
+}
+table.tab-counter tbody tr td:first-child {
+  text-align:right;
+}
+table.tab-counter tbody tr td:first-child::before {
+  content: counter(rowNumber);
+}
+#id_Code .w3-button {
+  width:100%;
   height:2em;
 }
-table tr {
-  height:1%;
+#id_Tab table {
+  width:auto;
 }
-table td:not(:first-child):not(:last-child) {
-  width:1%;
+#id_Tab thead th {
+}
+#id_Tab tbody td {
+  vertical-align:middle;
 }
 </style>
 
 </head>
 <body class="magnify" data-key_ever="" data-font="1" style="height:100%">
-<table class="w3-xxlarge w3-table" border="1" style="width:100%;height:100%">
-  <tbody>
-    <tr style="height:50%">
-      <td colspan="5"></td>
-    </tr>
-    <tr>
-      <td></td>
-      <td><button class="w3-button">1</button></td>
-      <td><button class="w3-button">2</button></td>
-      <td><button class="w3-button">3</button></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td></td>
-      <td><button class="w3-button">4</button></td>
-      <td><button class="w3-button">5</button></td>
-      <td><button class="w3-button">6</button></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td></td>
-      <td><button class="w3-button">7</button></td>
-      <td><button class="w3-button">8</button></td>
-      <td><button class="w3-button">9</button></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td></td>
-      <td><button class="w3-button">X</button></td>
-      <td><button class="w3-button">0</button></td>
-      <td><button class="w3-button">=</button></td>
-      <td></td>
-    </tr>
-    <tr style="height:50%">
-      <td colspan="5"></td>
-    </tr>
-  </tbody>
-</table>
+<div id="id_Code" class="w3-display-container" style="height:100%">
+  <table class="w3-xxlarge w3-display-middle" border="0">
+    <tbody>
+      <tr>
+        <td colspan="3">
+          <input type="text" name="code" style="width:12ch;text-align:center"
+          class="w3-input w3-border" readonly autocomplete="off"
+          value="" maxlength="10">
+        </td>
+      </tr>
+      <tr>
+        <td><button class="w3-button w3-border">1</button></td>
+        <td><button class="w3-button w3-border">2</button></td>
+        <td><button class="w3-button w3-border">3</button></td>
+      </tr>
+      <tr>
+        <td><button class="w3-button w3-border">4</button></td>
+        <td><button class="w3-button w3-border">5</button></td>
+        <td><button class="w3-button w3-border">6</button></td>
+      </tr>
+      <tr>
+        <td><button class="w3-button w3-border">7</button></td>
+        <td><button class="w3-button w3-border">8</button></td>
+        <td><button class="w3-button w3-border">9</button></td>
+      </tr>
+      <tr>
+        <td><button class="w3-button w3-border">x</button></td>
+        <td><button class="w3-button w3-border">0</button></td>
+        <td><button class="w3-button w3-border">&#9166;</button></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div id="id_Admin" style="display:none">
+  <div id="id_Bar" class="w3-bar w3-theme">
+    <button class="w3-button w3-bar-item" data-c="SAVE">Save</button>
+    <button class="w3-button w3-bar-item" data-c="ADD">Add</button>
+    <button class="w3-button w3-bar-item" data-c="LOGS">Logs</button>
+    <button class="w3-button w3-bar-item" data-c="RESET">Reset logs</button>
+  </div>
+  <div id="id_Tab">
+    <table class="tab-counter w3-table w3-border w3-bordered w3-striped">
+      <thead class="w3-theme-l2">
+        <tr>
+          <th>#</th>
+          <th style="width:10em">Code</th>
+          <th style="width:10em">Name</th>
+          <th>x</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
 </body>
 </html>

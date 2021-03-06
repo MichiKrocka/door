@@ -7,23 +7,23 @@
 *
 * @brief    Main WEB-server with express.
 ***********************************************************/
-const cfg = require('./config.json');
+const cfg       = require('./config.json');
 // .........................................................
 var compression  = require('compression'),
-//    upload       = require('express-fileupload'),
     path         = require('path'),
     favicon      = require('serve-favicon'),
     fs           = require('fs-extra'),
-//    child_p      = require('child_process'),
     sprintf      = require('sprintf-js').sprintf,
     express      = require('express'),
     extend       = require('extend'),
+    net          = require('net'),
     http         = require('http');
 // .........................................................
 global.sprintf = sprintf;
 global.fs      = fs;
-//global.child_p = child_p;
+global.extend  = extend;
 global.cfg     = cfg;
+global.net     = net;
 // .........................................................
 var app = express();
 // ---------------------------------------------------------
@@ -47,7 +47,6 @@ app.all(/.*/, async (req, res, next) => {
 // ---------------------------------------------------------
 app.get('/', (req, res) => {
   res.render('index', {
-    extend: extend,
     req: req,
     res: res
   });
@@ -55,8 +54,6 @@ app.get('/', (req, res) => {
 // rest ....................................................
 app.post('/', (req, res) => {
   res.render('index', {
-    extend: extend,
-    cfg: cfg,
     req: req,
     res: res
   }, function(err, html){

@@ -1,4 +1,15 @@
 {
   "port": 8000,
+  "sw_host": "192.168.1.30",
+  "sw_port": 9999,
+  "sw_on": "AAAAKtDygfiL/5r31e+UtsWg1Iv5nPCR6LfEsNGlwOLYo4HyhueT9tTu36Lfog==",
+  "sw_off": "AAAAKtDygfiL/5r31e+UtsWg1Iv5nPCR6LfEsNGlwOLYo4HyhueT9tTu3qPeow==",
+  "sw_delay": 1500,
+  "log": "log.txt",
+  "admin": "1942",
+  "codes": {
+    "1234": "abc",
+    "0000": "Master"
+  },
   "debug": 0
 }

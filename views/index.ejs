@@ -61,11 +61,11 @@ function makeInpuls(){
       sw     = false;
 
   client.connect(cfg.sw_port, cfg.sw_host, function(){
-    var buff = new Buffer(cfg.sw_on, 'base64');
+    var buff = Buffer.from(cfg.sw_on, 'base64');
 
     client.write(buff);
     setTimeout(function(){
-      var buff = new Buffer(cfg.sw_off, 'base64');
+      buff = Buffer.from(cfg.sw_off, 'base64');
 
       client.write(buff);
       sw = true;

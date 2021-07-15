@@ -22,7 +22,7 @@
           Ed = Eo + Eh,
           s  = Vt;
 
-      if(1 || Eh <= Vh){           // view bigger as element ??
+      if(1 || Eh <= Vh){      // view bigger as element ??
         if(Eo < Vo)           // scroll down
           s = Eo - Vo + Vt;
         else if(Ed > Vd)      // scroll up
@@ -33,11 +33,12 @@
         else if(Eo > Vd)      // scroll down
           s = Eo;
       }
+//      $V[0].scrollTop = s;      return;
       $V
       .stop()
       .animate({            // scroll view with animate
         scrollTop: s
-      }, "fast");
+      }, "fast", "linear");
     });
   }
 })(jQuery);

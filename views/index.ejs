@@ -39,18 +39,17 @@ if(typeof req.body.rest != "undefined"){
         res.json("KO");
       break;
     case "LOGS": // ........................................
-console.log(req.body, res.sendFile)
       if(req.body.code == cfg.admin)
-//        res.download(cfg.log);
-        res.sendFile(cfg.log, {}, err => {
-          console.log(err);
+        res.sendFile(`${dirname}/${cfg.log}`, {}, err => {
+          if (err)
+            console.log(err);
         });
       else
         res.end("");
       break;
     case "RESET": // .......................................
       if(req.body.code == cfg.admin)
-        fs.remove(cfg.log);
+        fs.truncate(cfg.log, 0);
       res.json("");
       break;
     default:
@@ -110,6 +109,9 @@ function makeInpuls(){
 
 <script src="lib/jquery/jquery.min.js"></script>
 <script src="lib/sprintf.min.js"></script>
+<script src="lib/jquery/jquery.drags.js"></script>
+<script src="lib/jquery/jquery.dialog.js"></script>
+<script src="lib/jquery/jquery.i18n.js"></script>
 <script language="JavaScript" type="text/javascript">
 // ---------------------------------------------------------
 var keyNames = {
@@ -221,9 +223,21 @@ jQuery(function($){
         $(this).closest('tr').remove();
         break;
       case "LOGS":
-        download("", {
+        $.post("", {
           rest: "LOGS",
           code: code
+        }, D => {
+          let dia = $.alert(
+            `<div style="height:35em;overflow:auto;white-space:pre"
+            >${D}</div>`, {
+            title: "Logs",
+            alert_class: "",
+            lang: "",
+            css: {
+              width: "80%",
+            }
+          });
+          console.log(D);
         });
         break;
       case "RESET":
@@ -232,6 +246,9 @@ jQuery(function($){
           code: code
         }, function(D){
         });
+        break;
+      case "CLOSE":
+        location.reload();
         break;
       case "ADD":
         $('tbody', '#id_Tab').append(sprintf(TR, "", ""));
@@ -400,6 +417,7 @@ table.tab-counter tbody tr td:first-child::before {
     <button class="w3-button w3-bar-item" data-c="ADD">Add</button>
     <button class="w3-button w3-bar-item" data-c="LOGS">Logs</button>
     <button class="w3-button w3-bar-item" data-c="RESET">Reset logs</button>
+    <button class="w3-button w3-bar-item" data-c="CLOSE">Close</button>
   </div>
   <div id="id_Tab">
     <table class="tab-counter w3-table w3-border w3-bordered w3-striped">

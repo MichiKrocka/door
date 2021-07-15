@@ -3,75 +3,58 @@
 * @author   Michael Krocka
 * @version  0.0
 *
-* @brief    Vertical scroll of view container to element
-*           inside of container.
+* @brief    Translation.
 ***********************************************************/
+"use strict";
+// *********************************************************
 (function($) {
+  const REG  = /^[ \r\n\t]*|[ \r\n\t]*$/g;
   // -------------------------------------------------------
   $.fn.i18n = function(obj) {
-    return this.each(function(){
-      if(typeof obj == "undefined" ||
-         typeof obj.vocabulary == "undefined")
+    return this.each(function() {
+      if (obj == undefined || obj.vocabulary == undefined)
          return;
       // ...................................................
+      for (let Prop of ["title", "label", "placeholder"]) {
+        let Class = `.lang-${Prop}`;
+
+        $(Class, this)
+        .filter((ix, el) => $(el).prop(Prop) != "")
+        .each(function() {
+          if ($(this).data(Class) == undefined)
+            $(this).data(Class, $(this).prop(Prop));
+          $(this).prop(Prop, getText(this, $(this)
+            .data(Class)));
+        });
+      }
+      // ...................................................
       $('.lang', this)
-      .filter(function(){return $(this).text() != "";})
-      .each(function(){
-        var txt = $(this)
-                  .text()
-                  .replace(/^[ \r\n\t]*|[ \r\n\t]*$/g, "");
+      .filter((ix, el) => $(el).text() != "")
+      .each(function() {
+//        let txt = $(this).text().replace(REG, "");
+        let txt = $(this).html().trim();
         
-        if(typeof $(this).data("lang") == "undefined")
+        if ($(this).data("lang") == undefined)
           $(this).data("lang", txt);
-        $(this).text(getText(this, $(this).data("lang")));
-      });
-      // ...................................................
-      $('.lang-title', this)
-      .filter(function(){return $(this).prop("title") != "";})
-      .each(function(){
-        if(typeof $(this).data("lang-title") == "undefined")
-          $(this).data("lang-title", $(this).prop("title"));
-        $(this).prop("title", getText(this, $(this)
-        .data("lang-title")));
-      });
-      // ...................................................
-      $('.lang-label', this)
-      .filter(function(){return $(this).prop("label") != "";})
-      .each(function(){
-        if(typeof $(this).data("lang-label") == "undefined")
-          $(this).data("lang-label", $(this).prop("label"));
-        $(this).prop("label", getText(this, $(this)
-        .data("lang-label")));
+        $(this).html(getText(this, $(this).data("lang")));
       });
       // ...................................................
       $('.lang-value', this)
-      .filter(function(){return $(this).val() != "";})
-      .each(function(){
-        var txt = $(this)
-                  .val()
-                  .replace(/^[ \r\n\t]*|[ \r\n\t]*$/g, "");
+      .filter((ix, el) => $(el).val() != "")
+      .each(function() {
+        let txt = $(this).val().replace(REG, "");
         
-        if(typeof $(this).data("lang-value") == "undefined")
+        if ($(this).data("lang-value") == undefined)
           $(this).data("lang-value", txt);
-        $(this).val("title", getText(this, $(this)
-        .data("lang-value")));
-      });
-      // ...................................................
-      $('.lang-placeholder', this)
-      .filter(function(){return $(this).prop("placeholder") != "";})
-      .each(function(){
-        if(typeof $(this).data("lang-placeholder") == "undefined")
-          $(this).data("lang-placeholder", $(this)
-          .prop("placeholder"));
-        $(this).prop("placeholder", getText(this, $(this)
-        .data("lang-placeholder")));
+        $(this).val(getText(this, $(this)
+          .data("lang-value")));
       });
     });
     // .....................................................
     function getText(el, T){
       if(obj.lang != "en-en"){
-        if(typeof obj.vocabulary[T] == "undefined")
-          console.log("i18n", T);
+        if(obj.vocabulary[T] == undefined)
+          console.log("i18n", T, el, $(el).data());
         else
           T = obj.vocabulary[T];
       }
@@ -80,7 +63,7 @@
   }
   // -------------------------------------------------------
   $.i18n = function(text, obj) {
-    return typeof obj.vocabulary[text] == "undefined" ?
+    return obj.vocabulary[text] == undefined ?
            text : obj.vocabulary[text];
   }
 })(jQuery);

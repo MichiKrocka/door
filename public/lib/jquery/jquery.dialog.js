@@ -25,8 +25,10 @@
     return this.each(function() {
       var elem  = $(this),
           opts  = {},
-          nPage = $('.page', elem).length,
+          nPage = $('.page:not(.hidden)', elem).length,
           iPage = 0;
+
+      self.close = close;
       // ---------------------------------------------------
       function close(){
         $(window).off("resize", resize);
@@ -56,6 +58,7 @@
       // ---------------------------------------------------
       switch(action){
         case "open": // ************************************
+          $('.hidden', elem).hide();
           elem.show();
           $(window).on("resize", resize);
           opts = $.extend( {}, $.fn.dialog.defaults, options);
@@ -69,15 +72,17 @@
           $('header span.title', opts.element)
           .html(opts.title)
           .addClass(opts.lang);
-          // pageing .......................................
+          // paging ........................................
           if(nPage > 1){
             $('header', opts.element).append(
               '<button title="Next page" data-key="Alt-PageDown" '+
-                 'class="PG_UP lang-title btn-narrow '+
-                    'w3-bar-item w3-button w3-right">'+
+                 'data-dc="PG_UP" '+
+                 'class="PG_UP lang-title btn-narrow w3-bar-item '+
+                    'w3-button w3-right">'+
                 '<i class="fas fa-fw fa-step-forward"></i>'+
               '</button>'+
               '<button title="Previous page" data-key="Alt-PageUp" '+
+                 'data-dc="PG_DN" '+
                  'class="PG_DN lang-title btn-narrow w3-bar-item '+
                     'w3-button w3-right">'+
                 '<i class="fas fa-fw fa-step-backward"></i>'+
@@ -90,7 +95,7 @@
           // buttons header ................................
           if(!$.isEmptyObject(opts.headerButtons)){
             var B = [];
-            
+
             for(var b in opts.headerButtons){
               B.push(
                 $(opts.headerButtons[b]).length ?
@@ -106,32 +111,53 @@
           // buttons footer ................................
           if(!$.isEmptyObject(opts.buttons)){
             var B = [];
-            
+
             for(var b in opts.buttons){
-              B.push(
-                $(opts.buttons[b]).length ?
-                opts.buttons[b] :
-                '<button class="lang w3-bar-item w3-button w3-right"'+
-                    ' data-dc="'+b+'">'+
-                  opts.buttons[b]+
-                '</button>'
-              );
+              if(opts.buttons[b] != "")
+                B.push(
+                  $(opts.buttons[b]).length ?
+                  opts.buttons[b] :
+                  '<button class="lang w3-bar-item w3-button w3-right"'+
+                      ' data-dc="'+b+'">'+
+                    opts.buttons[b]+
+                  '</button>'
+                );
             }
             $('footer', opts.element).html(B.join(""));
           }
           // insert html ...................................
-          $('main',     opts.element).html(elem);
-          $('.page',    opts.element).hide();
-          $('.page',    opts.element).eq(0).show();
+          $('main',               opts.element).html(elem);
+          $('.page:not(.hidden)', opts.element).hide();
+          var title2 = $('.page:not(.hidden)', opts.element)
+            .eq(0)
+            .show()
+            .end()
+            .prop("title");
+
+          $('header span.title2', opts.element)
+          .html(title2 ? `&nbsp;-&nbsp;${title2}` : "");
           $('w3-modal', opts.element).addClass(opts.animate);
           // events ........................................
           $(opts.element)
-          .on("click", 'button,.w3-button,.w3-btn,.w3-hoverable',
+          // ...............................................
+          .on("click", 'input[type=range][data-dc],button[data-dc],.w3-button[data-dc],.w3-btn[data-dc],.w3-hoverable[data-dc]',
           function(ev){
-            if($(this).hasClass("PG_UP")){
-              $('.page', opts.element).hide();
+            if($(this).hasClass("PG_UP")){ // ..............
               iPage = (iPage + 1) % nPage;
-              $('.page', opts.element).eq(iPage).show();
+              $('.page:not(.hidden)', opts.element)
+              .removeClass("w3-animate-left")
+              .addClass("w3-animate-right")
+              .hide();
+              var title2 = $('.page:not(.hidden)', opts.element)
+                .eq(iPage)
+                .removeClass("w3-animate-left")
+                .addClass("w3-animate-right")
+                .show()
+                .prop("title");
+
+              $('header span.title2', opts.element)
+              .html(title2 ? `&nbsp;-&nbsp;${title2}` : "");
+
               $('.page-info', opts.element)
               .text((iPage+1)+" / "+nPage)
               $('input,textarea,select', opts.element)
@@ -140,10 +166,22 @@
               $(elem).trigger("dialog:page", ["PG_UP", iPage]);
               return;
             }
-            if($(this).hasClass("PG_DN")){
-              $('.page', opts.element).hide();
+            if($(this).hasClass("PG_DN")){ // ..............
               iPage = (nPage + iPage - 1) % nPage;
-              $('.page', opts.element).eq(iPage).show();
+              $('.page:not(.hidden)', opts.element)
+              .removeClass("w3-animate-right")
+              .addClass("w3-animate-left")
+              .hide();
+              var title2 = $('.page:not(.hidden)', opts.element)
+                .eq(iPage)
+                .removeClass("w3-animate-right")
+                .addClass("w3-animate-left")
+                .show()
+                .prop("title");
+
+              $('header span.title2', opts.element)
+              .html(title2 ? `&nbsp;-&nbsp;${title2}` : "");
+
               $('.page-info', opts.element)
               .text((iPage+1)+" / "+nPage)
               $('input,textarea,select', opts.element)
@@ -152,11 +190,26 @@
               $(elem).trigger("dialog:page", ["PG_DN", iPage]);
               return;
             }
-            var ret = opts.callBack ? 
+            opts.iPage = iPage;
+            var ret = opts.callBack ?
                       opts.callBack(ev, this) : 1;
-            
-            if($(this).hasClass("dialog-close") || ret)
+
+            if($(this).hasClass("dialog-close") || ret){
+              if(opts.cleanFun)
+                opts.cleanFun();
               close();
+            }
+          })
+          // ...............................................
+          .on("change focusout keyup",
+              '.dc-change[data-dc],.dc-focusout[data-dc],.dc-keyup[data-dc]', 
+          function(ev){
+            if(!$(this).hasClass("dc-"+ev.type))
+              return;
+            var ret = opts.callBack ?
+                      opts.callBack(ev, this) : 1;
+
+            return ret;
           });
           // translate, place and show element .............
           if(typeof oLang == "undefined")
@@ -165,7 +218,8 @@
           $('.page-info', opts.element)
           .text((iPage+1)+" / "+nPage)
           // save opts .....................................
-          elem.data("opts", opts);
+          elem.data("dialog", opts.element);
+          elem.data("opts",   opts);
           // default focus + select
           setTimeout(function(){
             $('input,textarea,select', opts.element)
@@ -178,8 +232,12 @@
           move();
           break;
         case "close":  // **********************************
+          if(opts.cleanFun)
+            opts.cleanFun();
           close();
           break;
+        case "ooptions": // *********************************
+          return opts;
       }
     });
   };
@@ -187,20 +245,25 @@
   $.fn.dialog.defaults = {
     html:
       '<div class="w3-modal">'+
-        '<div class="w3-modal-content w3-card-4 w3-theme-l5">'+
+        '<div class="w3-modal-content w3-card-4 w3-theme-l5 w3-animate-zoom">'+
           '<header class="w3-container w3-bar w3-theme">'+
-            '<button class="lang-title w3-button w3-bar-item '+
-              'w3-right dialog-close" title="Close">'+
-              '&times;'+
+            '<span class="text-truncate w3-bar-item w3-left" '+
+              'style="max-width:calc(100% - 120px);padding:8px">'+
+              '<span class="title"></span>'+
+              '<span class="title2"></span>'+
+            '</span>'+
+            '<button class="lang-title w3-button btn-narrow w3-bar-item '+
+              'w3-right dialog-close" title="Close" data-dc="CLOSE">'+
+              '<i class="fas fa-fw fa-times"></i>'+
             '</button>'+
-            '<span class="title text-truncate w3-bar-item" '+
-              'style="max-width:60%"></span>'+
           '</header>'+
           '<main></main>'+
           '<footer class="w3-container w3-theme">'+
-            '<button class="lang w3-bar-item w3-button w3-right '+
-              'dialog-close" data-key="Esc">'+
-              'Close'+
+            '<button data-key="Esc" data-dc="CLOSE" title="Close" '+
+              'class="lang-title w3-bar-item w3-button w3-right">'+
+              '<i class="fas fa-fw fa-times"></i>'+
+              '<span class="lang w3-hide-small" '+
+                'style="margin-left:0.5em">Close</span>'+
             '</button>'+
           '</footer>'+
         '</div>'+

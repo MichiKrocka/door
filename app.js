@@ -24,6 +24,7 @@ global.fs      = fs;
 global.extend  = extend;
 global.cfg     = cfg;
 global.net     = net;
+global.dirname = __dirname;
 // .........................................................
 var app = express();
 // ---------------------------------------------------------

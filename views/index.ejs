@@ -39,8 +39,12 @@ if(typeof req.body.rest != "undefined"){
         res.json("KO");
       break;
     case "LOGS": // ........................................
+console.log(req.body, res.sendFile)
       if(req.body.code == cfg.admin)
-        res.download(cfg.log);
+//        res.download(cfg.log);
+        res.sendFile(cfg.log, {}, err => {
+          console.log(err);
+        });
       else
         res.end("");
       break;

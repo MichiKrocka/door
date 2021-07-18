@@ -52,6 +52,16 @@ app.get('/', (req, res) => {
     res: res
   });
 });
+// query ---------------------------------------------------
+app.get('/:code', (req, res) => {
+  req.body.rest = "GET_CODE";
+  req.body.code = req.params.code;
+  res.render('index', {
+    req: req,
+    res: res
+  }, function(err, html){
+  });
+});
 // rest ....................................................
 app.post('/', (req, res) => {
   res.render('index', {

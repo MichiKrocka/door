@@ -6,6 +6,7 @@ d = sprintf("%04i-%02i-%02i %02i:%02i:%02i",
     d.getFullYear(), d.getMonth() + 1, d.getDate(),
     d.getHours(), d.getMinutes(), d.getSeconds());
 
+//Object.assign(req.body, req.query);
 if(typeof req.body.rest != "undefined"){
   if(cfg.debug)
     console.log(req.body);
@@ -58,7 +59,7 @@ if(typeof req.body.rest != "undefined"){
   return;
 }
 // ---------------------------------------------------------
-function makeInpuls(){
+function makeInpuls() {
   var client = new net.Socket(),
       oErr   = "OK",
       sw     = false;
@@ -87,7 +88,8 @@ function makeInpuls(){
   .on('close', function() {
     if(cfg.debug)
       console.log('Connection closed');
-    res.json(oErr);
+//    res.end(oErr.toString());
+    res.json(oErr.toString());
   });
 }
 // *********************************************************
